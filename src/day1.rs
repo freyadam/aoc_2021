@@ -10,7 +10,7 @@ fn triad_sums(vec: Vec<u32>) -> Vec<u32> {
 }
 
 fn general_solution<F: Fn(Vec<u32>) -> Vec<u32>>(f: F) -> String {
-    // loag file into a vector of numbers
+    // load file into a vector of numbers
     let input: String = fs::read_to_string("inputs/day1.txt").expect("Could not read file");
     let lines: Vec<u32> = input.lines().map(|s| s.parse::<u32>().unwrap()).collect();
     // perform pre-processing aggregation
@@ -32,4 +32,14 @@ pub fn ex1() -> String {
 pub fn ex2() -> String {
     // count cases after getting a rolling sum of three
     general_solution(triad_sums)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ex1, ex2};
+    #[test]
+    fn test_both_exercises() {
+        assert_eq!(ex1(), "1292");
+        assert_eq!(ex2(), "1262");
+    }
 }

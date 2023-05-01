@@ -91,3 +91,13 @@ pub fn ex2() -> String {
 
     (oxygen as u32 * co2 as u32).to_string()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{ex1, ex2};
+    #[test]
+    fn test_both_exercises() {
+        assert_eq!(ex1(), "2694510");
+        assert_eq!(ex2(), "6775520");
+    }
+}

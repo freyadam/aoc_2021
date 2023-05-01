@@ -96,3 +96,13 @@ pub fn ex1() -> String {
 pub fn ex2() -> String {
     general_solution(add_2)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{ex1, ex2};
+    #[test]
+    fn test_both_exercises() {
+        assert_eq!(ex1(), "1990000");
+        assert_eq!(ex2(), "1975421260");
+    }
+}
