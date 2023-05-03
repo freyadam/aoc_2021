@@ -6,6 +6,7 @@ mod day5;
 mod day6;
 mod day7;
 mod day8;
+mod day9;
 
 fn main() {
     let placeholder = "???";
@@ -18,7 +19,7 @@ fn main() {
     println!("Day  6: {}, {}", day6::ex1(), day6::ex2());
     println!("Day  7: {}, {}", day7::ex1(), day7::ex2());
     println!("Day  8: {}, {}", day8::ex1(), day8::ex2());
-    println!("Day  9: {}, {}", placeholder, placeholder);
+    println!("Day  9: {}, {}", day9::ex1(), day9::ex2());
     println!("Day 10: {}, {}", placeholder, placeholder);
     println!("Day 11: {}, {}", placeholder, placeholder);
     println!("Day 12: {}, {}", placeholder, placeholder);
