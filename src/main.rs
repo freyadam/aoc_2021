@@ -1,6 +1,8 @@
 mod day1;
 mod day10;
 mod day11;
+// mod day12;
+mod day13;
 mod day2;
 mod day3;
 mod day4;
@@ -24,8 +26,8 @@ fn main() {
     println!("Day  9: {}, {}", day9::ex1(), day9::ex2());
     println!("Day 10: {}, {}", day10::ex1(), day10::ex2());
     println!("Day 11: {}, {}", day11::ex1(), day11::ex2());
-    println!("Day 12: {}, {}", placeholder, placeholder);
-    println!("Day 13: {}, {}", placeholder, placeholder);
+    // println!("Day 12: {}, {}", day12::ex1(), day12::ex2()); // takes too long
+    println!("Day 13: {}, {}", day13::ex1(), day13::ex2());
     println!("Day 14: {}, {}", placeholder, placeholder);
     println!("Day 15: {}, {}", placeholder, placeholder);
     println!("Day 16: {}, {}", placeholder, placeholder);
