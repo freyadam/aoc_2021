@@ -10,15 +10,51 @@ struct State {
 }
 
 impl State {
+    fn new(s: String, simplified: bool) -> State {
+        let mut re_str: String = String::from("##([A-D])#([A-D])#([A-D])#([A-D])###\n");
+        for _ in 0..3 {
+            re_str.push_str("  #([A-D])#([A-D])#([A-D])#([A-D])#\n");
+        }
+        let re = Regex::new(&re_str).unwrap();
+        let caps = re.captures(&s).unwrap();
+
+        let mut y_counter = 0;
+        let mut set: BTreeSet<(char, u32, u32)> = BTreeSet::new();
+        for row in 0..4 {
+            if simplified && (row == 1 || row == 2) {
+                continue;
+            }
+
+            set.insert((caps.get(4 * row as usize + 1).unwrap().as_str().parse::<char>().unwrap(), y_counter + 2, 3));
+            set.insert((caps.get(4 * row as usize + 2).unwrap().as_str().parse::<char>().unwrap(), y_counter + 2, 5));
+            set.insert((caps.get(4 * row as usize + 3).unwrap().as_str().parse::<char>().unwrap(), y_counter + 2, 7));
+            set.insert((caps.get(4 * row as usize + 4).unwrap().as_str().parse::<char>().unwrap(), y_counter + 2, 9));
+
+            y_counter += 1;
+        }
+
+        State {
+            cost: 0,
+            positions: set,
+        }
+    }
+
+    fn amphipod_line(c: char) -> u32 {
+        3 + 2 * (c as u32 - 'A' as u32)
+    }
+
+    fn amphipod_cost(c: char) -> u32 {
+        (10 as u32).pow(c as u32 - 'A' as u32)
+    }
+
     fn is_end_state(&self) -> bool {
-        let mut k: u32;
+        // Check that each amphipod is in the correct chamber.
         for (c, y, x) in self.positions.iter() {
             if *y == 1 {
                 return false;
             }
 
-            k = 3 + 2 * (*c as u32 - 'A' as u32);
-            if *x != k {
+            if *x != State::amphipod_line(*c) {
                 return false;
             }
         }
@@ -31,6 +67,8 @@ impl State {
         let mut new_positions = self.positions.clone();
         let mut c;
 
+        // For each amphipod and every position on the board, check that this position is reachable.
+        // If it is, create a new state for it.
         for old_pos in self.positions.iter() {
             c = old_pos.0;
 
@@ -51,6 +89,7 @@ impl State {
 
         }
 
+        // Return all states where a single amphipod moved (possibly multiple spaces).
         ret
     }
 
@@ -60,7 +99,7 @@ impl State {
         positions: &BTreeSet<(char, u32, u32)>,
     ) -> bool {
 
-        // place is empty
+        // Accessed point is free of other amphipods.
         for (_, y, x) in positions.iter() {
             if y_old == *y && x_old == *x {
                 continue;
@@ -71,7 +110,7 @@ impl State {
             }
         }
 
-        // there exists an unblocked path in between both points
+        // There exists an unblocked path in between both points.
         for (_, y, x) in positions.iter() {
             if y_old == *y && x_old == *x {
                 continue;
@@ -82,7 +121,7 @@ impl State {
                     return false;
                 }
             }
-            // (room-to-room case)
+            // (room-to-room case only)
             if y_old >= 2 && y_new >= 2 {
                 for y_temp in 1..y_old {
                     if *y == y_temp && *x == x_old {
@@ -95,7 +134,8 @@ impl State {
                     }
                 }
             }
-            // (room-to-hall cases)
+
+            // (room-to-hall cases only)
             if y_old >= 2 && y_new == 1 {
                 for y_temp in 1..y_old {
                     if *y == y_temp && *x == x_old {
@@ -103,7 +143,7 @@ impl State {
                     }
                 }
             }
-            // (hall-to-room cases)
+            // (hall-to-room cases only)
             if y_old == 1 && y_new >= 2 {
                 for y_temp in 1..y_new {
                     if *y == y_temp && *x == x_new {
@@ -113,24 +153,25 @@ impl State {
             }
         }
 
-        // the position is not in front of a chamber
+        // The position is not in front of a chamber which can never contain
+        // any amphipods.
         for (y, x) in [(1, 3), (1, 5), (1, 7), (1, 9)] {
             if y == y_new && x == x_new {
                 return false;
             }
         }
 
-        // movement not between two positions in a hall
+        // There can be no movement between two places in the hall.
         if y_old == 1 && y_new == 1 {
             return false;
         }
 
-        // if moving to a chamber, it is the right kind
-        if y_new >= 2 && x_new != 3 + 2 * (c as u32 - 'A' as u32) {
+        // Each kind of amphipod can move only to its own chamber.
+        if y_new >= 2 && x_new != State::amphipod_line(c) {
             return false;
         }
 
-        // if moving to a chamber, no different type of amphibod is inside
+        // If moving to a chamber, no different type of amphibod is inside.
         if y_new >= 2 {
             for (c_other, y, x) in positions.iter() {
                 if *x != x_new {
@@ -147,6 +188,7 @@ impl State {
             }
         }
 
+        // If all conditions were passed, the new position can be accessed.
         true
     }
 
@@ -154,14 +196,15 @@ impl State {
         let k: u32;
 
         if y_old >= 2 && y_new >= 2 {
-            // room to room
+            // Room-to-room movement
             k = y_old.abs_diff(1) + y_new.abs_diff(1) + x_old.abs_diff(x_new);
         } else {
-            // room to hall or hall to room
+            // Room-to-hall or hall-to-room movement
             k = y_old.abs_diff(y_new) + x_old.abs_diff(x_new);
         }
 
-        k * (10 as u32).pow(c as u32 - 'A' as u32)
+        // The cost depends on the distance and the type of the amphipod.
+        k * State::amphipod_cost(c)
     }
 
 }
@@ -170,7 +213,7 @@ impl Ord for State {
     fn cmp(&self, other: &Self) -> Ordering {
         self.cost
             .cmp(&other.cost)
-            .reverse()
+            .reverse() // As a max-heap is used, it is necessary to reverse the cost comparison here
             .then_with(|| self.positions.cmp(&other.positions))
     }
 }
@@ -181,60 +224,33 @@ impl PartialOrd for State {
     }
 }
 
-fn load_init_state(s: String, simplified: bool) -> State {
-    let re =
-        Regex::new(r"##([A-D])#([A-D])#([A-D])#([A-D])###\n  #([A-D])#([A-D])#([A-D])#([A-D])#\n  #([A-D])#([A-D])#([A-D])#([A-D])#\n  #([A-D])#([A-D])#([A-D])#([A-D])#\n")
-            .unwrap();
-    let caps = re.captures(&s).unwrap();
-    let mut k = 0;
-    
-    let mut set: BTreeSet<(char, u32, u32)> = BTreeSet::new();
-    for row in 0..4 {
-        if simplified && (row == 1 || row == 2) {
-            continue;
-        }
-        
-        set.insert((caps.get(4 * row as usize + 1).unwrap().as_str().parse::<char>().unwrap(), k + 2, 3));
-        set.insert((caps.get(4 * row as usize + 2).unwrap().as_str().parse::<char>().unwrap(), k + 2, 5));
-        set.insert((caps.get(4 * row as usize + 3).unwrap().as_str().parse::<char>().unwrap(), k + 2, 7));
-        set.insert((caps.get(4 * row as usize + 4).unwrap().as_str().parse::<char>().unwrap(), k + 2, 9));
-
-        k += 1;
-    }
-    
-    State {
-        cost: 0,
-        positions: set,
-    }
-}
-
 fn general_solution(input_str: String, simplified: bool) -> u32 {
-    let all_positions: Vec<(u32, u32)> = if simplified {
-        Vec::from([(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7),
-                   (1, 8), (1, 9), (1, 10), (1, 11), (2, 3), (2, 5), (2, 7),
-                   (2, 9), (3, 3), (3, 5), (3, 7), (3, 9)])
-    } else {
-        Vec::from([(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7),
-                   (1, 8), (1, 9), (1, 10), (1, 11), (2, 3), (2, 5), (2, 7),
-                   (2, 9), (3, 3), (3, 5), (3, 7), (3, 9), (4, 3), (4, 5), (4, 7),
-                   (4, 9), (5, 3), (5, 5), (5, 7), (5, 9)])
-    };       
-    let state = load_init_state(input_str, simplified);
+    let mut all_positions: Vec<(u32, u32)> = Vec::from([(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6),
+                                                        (1, 7), (1, 8), (1, 9), (1, 10), (1, 11),
+                                                        (2, 3), (2, 5), (2, 7), (2, 9),
+                                                        (3, 3), (3, 5), (3, 7), (3, 9)]);
+    // Add two more lines for the more complex version of the puzzle.
+    if !simplified {
+        all_positions.append(&mut Vec::from([(4, 3), (4, 5), (4, 7), (4, 9),
+                                             (5, 3), (5, 5), (5, 7), (5, 9)]));
+    }
+
+    // Initialize data structures needed for Dijkstra.
     let mut best_costs: HashMap<BTreeSet<(char, u32, u32)>, u32> = HashMap::new();
-    let mut heap: BinaryHeap<State> = BinaryHeap::from([state]);
+    let mut heap: BinaryHeap<State> = BinaryHeap::from([State::new(input_str, simplified)]);
 
     while let Some(s) = heap.pop() {
-
+        // Return cost if a solution was found.
         if s.is_end_state() {
             return s.cost;
         }
-
+        // Skip state if a better solution was already found.
         if let Some(cost) = best_costs.get(&s.positions) {
             if cost < &s.cost {
                 continue;
             }
         }
-
+        // Extend heap with newly accessible states.
         for accessible_s in s.accessible_states(&all_positions) {
             match best_costs.get(&accessible_s.positions) {
                 Some(current_cost) if accessible_s.cost >= *current_cost => {}
